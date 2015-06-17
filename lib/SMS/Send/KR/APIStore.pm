@@ -117,7 +117,7 @@ sub send_sms {
     my $self   = shift;
     my %params = (
         _from    => $self->{_from},
-        _type    => $self->{_type}  || 'SMS',
+        _type    => $self->{_type} || 'SMS',
         _delay   => $self->{_delay} || 0,
         _subject => $self->{_subject},
         _epoch   => q{},
@@ -138,8 +138,8 @@ sub send_sms {
         detail  => +{},
     );
 
-    $ret{reason} = 'text is needed',   return \%ret unless $text;
-    $ret{reason} = 'to is needed',     return \%ret unless $to;
+    $ret{reason} = 'text is needed', return \%ret unless $text;
+    $ret{reason} = 'to is needed',   return \%ret unless $to;
     $ret{reason} = '_type is invalid', return \%ret
         unless $type && $type =~ m/^(SMS|LMS)$/i;
 
@@ -183,14 +183,14 @@ sub send_sms {
     my $res = $http->post_form( $url, \%form );
     $ret{reason} = 'cannot get valid response for POST request';
     if ( $res && $res->{success} ) {
-        $ret{detail}  = decode_json( $res->{content} );
+        $ret{detail} = decode_json( $res->{content} );
         $ret{success} = 1 if $ret{detail}{result_code} eq '200';
 
-        $ret{reason}  = 'unknown error';
-        $ret{reason}  = 'user error'      if $ret{detail}{result_code} eq '100';
-        $ret{reason}  = 'ok'              if $ret{detail}{result_code} eq '200';
-        $ret{reason}  = 'parameter error' if $ret{detail}{result_code} eq '300';
-        $ret{reason}  = 'etc error'       if $ret{detail}{result_code} eq '400';
+        $ret{reason} = 'unknown error';
+        $ret{reason} = 'user error' if $ret{detail}{result_code} eq '100';
+        $ret{reason} = 'ok' if $ret{detail}{result_code} eq '200';
+        $ret{reason} = 'parameter error' if $ret{detail}{result_code} eq '300';
+        $ret{reason} = 'etc error' if $ret{detail}{result_code} eq '400';
     }
     else {
         $ret{detail} = $res;
@@ -239,7 +239,7 @@ sub report {
     $form{$_} or delete $form{$_} for keys %form;
     my $params = $http->www_form_urlencode( \%form );
 
-    my $res = $http->get( "$url?$params" );
+    my $res = $http->get("$url?$params");
     $ret{reason} = 'cannot get valid response for GET request';
     if ( $res && $res->{success} ) {
         my $detail = decode_json( $res->{content} );
