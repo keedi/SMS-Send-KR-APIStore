@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use 5.006;
+use 5.008;
 
 use ExtUtils::MakeMaker 6.17;
 
@@ -13,11 +13,14 @@ my %WriteMakefileArgs = (
   "DISTNAME" => "SMS-Send-KR-APIStore",
   "EXE_FILES" => [],
   "LICENSE" => "perl",
-  "MIN_PERL_VERSION" => "5.006",
+  "MIN_PERL_VERSION" => "5.008",
   "NAME" => "SMS::Send::KR::APIStore",
   "PREREQ_PM" => {
+    "HTTP::Tiny" => 0,
+    "JSON" => 0,
     "SMS::Send" => 0,
-    "parent" => 0
+    "parent" => 0,
+    "utf8" => 0
   },
   "TEST_REQUIRES" => {
     "File::Spec" => 0,
@@ -32,9 +35,12 @@ my %WriteMakefileArgs = (
 
 my %FallbackPrereqs = (
   "File::Spec" => 0,
+  "HTTP::Tiny" => 0,
+  "JSON" => 0,
   "SMS::Send" => 0,
   "Test::More" => 0,
-  "parent" => 0
+  "parent" => 0,
+  "utf8" => 0
 );
 
 
