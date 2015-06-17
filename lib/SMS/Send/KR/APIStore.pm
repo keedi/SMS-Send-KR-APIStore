@@ -330,4 +330,101 @@ __END__
 
 =head1 DESCRIPTION
 
-...
+SMS::Send driver for sending SMS messages with the L<APIStore SMS service|http://www.apistore.co.kr/api/apiView.do?service_seq=151>.
+Current version of APIStore SMS service DOES NOT support HTTPS,
+so you have to use this module at your own risk.
+
+
+=method new
+
+This constructor should not be called directly. See L<SMS::Send> for details.
+
+Available parameters are:
+
+=for :list
+* _url
+* _agent
+* _timeout
+* _from
+* _type
+* _delay
+* _id
+* _api_store_key
+
+
+=method send_sms
+
+This method should not be called directly. See L<SMS::Send> for details.
+
+Available parameters are:
+
+=for :list
+* text
+* to
+* _from
+* _type
+* _delay
+* _subject
+* _epoch
+
+
+=method report
+
+This method checks the result of the request.
+
+
+=attr _url
+
+DO NOT change this value except for testing purpose.
+Default is C<"http://api.openapi.io/ppurio/1/message">.
+
+
+=attr _agent
+
+The agent value is sent as the "User-Agent" header in the HTTP requests.
+Default is C<"SMS-Send-KR-APIStore/#.###">.
+
+
+=attr _timeout
+
+HTTP request timeout seconds.
+Default is C<3>.
+
+
+=attr _id
+
+B<Required>.
+APIStore API id for REST API.
+
+
+=attr _api_store_key
+
+B<Required>.
+APIStore API key for REST API.
+
+
+=attr _from
+
+B<Required>.
+Source number to send sms.
+
+
+=attr _type
+
+Type of sms.
+Currently C<SMS> and C<LMS> are supported.
+Default is C<"SMS">.
+
+
+=attr _delay
+
+Delay second between sending sms.
+Default is C<0>.
+
+
+=head1 SEE ALSO
+
+=for :list
+* L<SMS::Send>
+* L<SMS::Send::Driver>
+* L<APIStore REST API|http://www.apistore.co.kr/api/apiView.do?service_seq=151>
