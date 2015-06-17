@@ -1,11 +1,14 @@
+requires "HTTP::Tiny" => "0";
+requires "JSON" => "0";
 requires "SMS::Send" => "0";
 requires "parent" => "0";
-requires "perl" => "5.006";
+requires "perl" => "5.008";
+requires "utf8" => "0";
 
 on 'test' => sub {
   requires "File::Spec" => "0";
   requires "Test::More" => "0";
-  requires "perl" => "5.006";
+  requires "perl" => "5.008";
 };
 
 on 'test' => sub {
@@ -13,7 +16,7 @@ on 'test' => sub {
 };
 
 on 'configure' => sub {
-  requires "perl" => "5.006";
+  requires "perl" => "5.008";
 };
 
 on 'develop' => sub {
