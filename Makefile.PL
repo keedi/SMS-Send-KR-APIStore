@@ -10,7 +10,6 @@ my %WriteMakefileArgs = (
   "AUTHOR" => "\x{ae40}\x{b3c4}\x{d615} - Keedi Kim <keedi\@cpan.org>",
   "CONFIGURE_REQUIRES" => {},
   "DISTNAME" => "SMS-Send-KR-APIStore",
-  "EXE_FILES" => [],
   "LICENSE" => "perl",
   "MIN_PERL_VERSION" => "5.008",
   "NAME" => "SMS::Send::KR::APIStore",
