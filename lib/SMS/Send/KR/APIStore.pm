@@ -12,7 +12,7 @@ use parent qw( SMS::Send::Driver );
 use HTTP::Tiny;
 use JSON;
 
-our $URL     = "http://api.openapi.io/ppurio/1/message";
+our $URL     = "http://api.apistore.co.kr/ppurio/1/message";
 our $AGENT   = 'SMS-Send-KR-APIStore/' . $SMS::Send::KR::APIStore::VERSION;
 our $TIMEOUT = 3;
 our $TYPE    = 'SMS';
