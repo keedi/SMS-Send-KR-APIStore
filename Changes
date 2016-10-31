@@ -1,7 +1,7 @@
 Revision history for {{ $dist->name }}
 
 {{ $NEXT }}
-    - Service domain changed
+    - Change domain from api.openapi.io to api.apistore.co.kr (GH #1)
 
 0.001     2015-06-17 14:37:59+09:00 Asia/Seoul
     - first release
