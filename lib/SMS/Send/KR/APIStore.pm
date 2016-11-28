@@ -40,7 +40,14 @@ our %ERROR_CODE = (
     '4424' => 'sms:URL SMS 미지원폰',
     '4403' => 'sms:메시지삭제됨',
     '4430' => 'sms:스팸',
+    '4431' => 'sms:발송제한 수신거부(스팸)',
+    '4432' => 'sms:번호도용문자 차단서비스에 가입된 발신번호(개인)사용',
+    '4433' => 'sms:번호도용문자 차단서비스에 가입된 발신번호(개인)사용',
+    '4434' => 'sms:발신번호 사전 등록제에 의한 미등록 차단',
+    '4435' => 'sms:KISA 에 스팸 신고된 발신번호 사용',
+    '4436' => 'sms:발신번호 사전 등록제 번호규칙 위반',
     '4420' => 'sms:기타에러',
+
     '6600' => 'mms:전달',
     '6601' => 'mms:타임아웃',
     '6602' => 'mms:핸드폰호처리중',
@@ -66,7 +73,17 @@ our %ERROR_CODE = (
     '6622' => 'mms:잘못된번호형식',
     '6623' => 'mms:잘못된데이터형식',
     '6624' => 'mms:MMS 정보를찾을수없음',
+    '6625' => 'mms:NPDB 에러',
+    '6626' => 'mms:080 수신거부(SPAM)',
+    '6627' => 'mms:발신제한 수신거부(SPAM)',
+    '6628' => 'mms:번호도용문자 차단서비스에 가입된 발신번호(개인)사용',
+    '6629' => 'mms:번호도용문자 차단서비스에 가입된 발신번호(개인)사용',
+    '6630' => 'mms:서비스 불가 번호',
+    '6631' => 'mms:발신번호 사전 등록제에 의한 미등록 차단',
+    '6632' => 'mms:KISA 에 스팸 신고된 발신번호 사용',
+    '6633' => 'mms:발신번호 사전 등록제 번호규칙 위반',
     '6670' => 'mms:이미지파일크기제한',
+
     '9903' => '선불사용자 사용금지',
     '9904' => 'Block time(날짜제한)',
     '9082' => '발송해제',
@@ -79,13 +96,14 @@ our %ERROR_CODE = (
     '9013' => '발송시간 지난 데이터',
     '9014' => '시간제한(리포트 수신대기 timeout)',
     '9020' => 'Wrong Data Format',
-    '9021' => '',
+    '9021' => 'Wrong Data Format',
     '9022' => 'Wrong Data Format(cinfo가 특수 문자/공백을 포함)',
     '9080' => 'Deny User Ack',
     '9214' => 'Wrong Phone Num',
     '9311' => 'Fax File Not Found',
     '9908' => 'PHONE, FAX 선불사용자 제한기능',
     '9090' => '기타에러',
+
     '-1'   => '잘못된 데이터 형식 발송오류',
 );
 
@@ -191,6 +209,9 @@ sub send_sms {
         $ret{reason} = 'ok' if $ret{detail}{result_code} eq '200';
         $ret{reason} = 'parameter error' if $ret{detail}{result_code} eq '300';
         $ret{reason} = 'etc error' if $ret{detail}{result_code} eq '400';
+        $ret{reason} = 'prevent unregistered caller identification'
+            if $ret{detail}{result_code} eq '500';
+        $ret{reason} = 'not enough pre-payment charge' if $ret{detail}{result_code} eq '600';
     }
     else {
         $ret{detail} = $res;
