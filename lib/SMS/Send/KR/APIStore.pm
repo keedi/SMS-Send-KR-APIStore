@@ -416,7 +416,9 @@ __END__
 
     # You can override _from or _type
 
+    #
     # send a message
+    #
     my $sent = $sender->send_sms(
         text     => 'You LMS message may use up to 2000 chars and must be utf8',
         to       => '01025116893',
@@ -425,7 +427,9 @@ __END__
         _subject => 'This is a subject', # subject is optional & up to 40 chars
     );
 
+    #
     # check the result
+    #
     my $result = $sender->report("20130314163439459");
     printf "success:     %s\n", $result->{success} ? 'success' : 'fail';
     printf "reason:      %s\n", $result->{reason};
@@ -442,6 +446,35 @@ __END__
     # or you can use the send_sms() result itself
     my $sent = $sender->send_sms( ... );
     my $result = $sender->report($sent);
+
+    #
+    # set caller id
+    #
+
+    # set caller id only
+    my $ret = $sender->cid( "0XXXXXXXXX" );
+
+    # set caller id and its description
+    my $ret = $sender->cid( "0XXXXXXXXX", "Office #201" );
+
+    #
+    # get caller id list
+    #
+    my $ret = $sender->cid;
+    if ( $ret->{success} ) {
+        my $cids = $ret->{number_list};
+        my $idx = 0;
+        for my $cid (@$cids) {
+            say "$idx:";
+            say "     client_id: " . $cid->{client_id};
+            say "       comment: " . ( $cid->{comment} || q{} );
+            say "    sendnumber: " . $cid->{sendnumber};
+            ++$idx;
+        }
+    }
+    else {
+        say "failed to get cid info: $ret->{reason}"
+    }
 
 
 =head1 DESCRIPTION
@@ -487,6 +520,11 @@ Available parameters are:
 =method report
 
 This method checks the result of the request.
+
+
+=method cid
+
+This method gets/sets the caller id information.
 
 
 =attr _url
