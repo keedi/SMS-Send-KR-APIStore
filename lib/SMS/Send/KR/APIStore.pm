@@ -12,7 +12,7 @@ use parent qw( SMS::Send::Driver );
 use HTTP::Tiny;
 use JSON;
 
-our $URL     = "http://api.apistore.co.kr/ppurio/1/message";
+our $URL     = "http://api.apistore.co.kr/ppurio/1";
 our $AGENT   = 'SMS-Send-KR-APIStore/' . $SMS::Send::KR::APIStore::VERSION;
 our $TIMEOUT = 3;
 our $TYPE    = 'SMS';
@@ -166,7 +166,7 @@ sub send_sms {
         timeout         => $self->{_timeout},
         default_headers => { 'x-waple-authorization' => $self->{_api_store_key} },
     ) or $ret{reason} = 'cannot generate HTTP::Tiny object', return \%ret;
-    my $url = sprintf '%s/%s/%s', $self->{_url}, lc($type), $self->{_id};
+    my $url = sprintf '%s/message/%s/%s', $self->{_url}, lc($type), $self->{_id};
 
     #
     # delay / send_time: reserve SMS
@@ -254,7 +254,7 @@ sub report {
         timeout         => $self->{_timeout},
         default_headers => { 'x-waple-authorization' => $self->{_api_store_key} },
     ) or $ret{reason} = 'cannot generate HTTP::Tiny object', return \%ret;
-    my $url = sprintf '%s/%s/%s', $self->{_url}, 'report', $self->{_id};
+    my $url = sprintf '%s/message/%s/%s', $self->{_url}, 'report', $self->{_id};
 
     my %form = ( cmid => $cmid );
     $form{$_} or delete $form{$_} for keys %form;
@@ -278,6 +278,101 @@ sub report {
     }
 
     return \%ret;
+}
+
+sub cid {
+    my ( $self, $cid, $cid_desc ) = @_;
+
+    if ($cid) {
+        my %ret = (
+            success     => 0,
+            reason      => q{},
+        );
+
+        my $http = HTTP::Tiny->new(
+            agent           => $self->{_agent},
+            timeout         => $self->{_timeout},
+            default_headers => { 'x-waple-authorization' => $self->{_api_store_key} },
+        ) or $ret{reason} = 'cannot generate HTTP::Tiny object', return \%ret;
+
+        my $url = sprintf '%s/sendnumber/%s/%s', $self->{_url}, 'save', $self->{_id};
+
+        my %form = (
+            sendnumber => $cid,
+            comment    => $cid_desc,
+        );
+        $form{$_} or delete $form{$_} for keys %form;
+
+        my $res = $http->post_form( $url, \%form );
+        $ret{reason} = 'cannot get valid response for POST request';
+
+        if ( $res && $res->{success} ) {
+            $ret{detail} = decode_json( $res->{content} );
+
+            if ( $ret{detail}{result_code} eq '200' ) {
+                $ret{success} = 1;
+                $ret{reason}  = 'ok';
+            }
+            else {
+                $ret{reason} = 'unknown error';
+                $ret{reason} = 'user error' if $ret{detail}{result_code} eq '100';
+                $ret{reason} = 'parameter error' if $ret{detail}{result_code} eq '300';
+                $ret{reason} = 'etc error' if $ret{detail}{result_code} eq '400';
+                $ret{reason} = 'prevent unregistered caller identification'
+                    if $ret{detail}{result_code} eq '500';
+                $ret{reason} = 'not enough pre-payment charge' if $ret{detail}{result_code} eq '600';
+            }
+        }
+        else {
+            $ret{detail} = $res;
+            $ret{reason} = 'unknown error';
+        }
+
+        return \%ret;
+    }
+    else {
+        my %ret = (
+            success     => 0,
+            reason      => q{},
+            number_list => q{},
+        );
+
+        my $http = HTTP::Tiny->new(
+            agent           => $self->{_agent},
+            timeout         => $self->{_timeout},
+            default_headers => { 'x-waple-authorization' => $self->{_api_store_key} },
+        ) or $ret{reason} = 'cannot generate HTTP::Tiny object', return \%ret;
+
+        my $url = sprintf '%s/sendnumber/%s/%s', $self->{_url}, 'list', $self->{_id};
+
+        my $res = $http->get($url);
+        $ret{reason} = 'cannot get valid response for GET request';
+
+        if ( $res && $res->{success} ) {
+            $ret{detail} = decode_json( $res->{content} );
+
+            if ( $ret{detail}{result_code} eq '200' ) {
+                $ret{success}     = 1;
+                $ret{reason}      = 'ok';
+                $ret{number_list} = $ret{detail}{numberList} unless $cid;
+            }
+            else {
+                $ret{reason} = 'unknown error';
+                $ret{reason} = 'user error' if $ret{detail}{result_code} eq '100';
+                $ret{reason} = 'parameter error' if $ret{detail}{result_code} eq '300';
+                $ret{reason} = 'etc error' if $ret{detail}{result_code} eq '400';
+                $ret{reason} = 'prevent unregistered caller identification'
+                    if $ret{detail}{result_code} eq '500';
+                $ret{reason} = 'not enough pre-payment charge' if $ret{detail}{result_code} eq '600';
+            }
+        }
+        else {
+            $ret{detail} = $res;
+            $ret{reason} = 'unknown error';
+        }
+
+        return \%ret;
+    }
 }
 
 1;
