@@ -1,6 +1,8 @@
 Revision history for {{ $dist->name }}
 
 {{ $NEXT }}
+
+0.003     2017-01-20 12:18:49+09:00 Asia/Seoul
     - Apply v2.3 user guide (GH #2)
         - add cid() method to get/set caller id information
 
