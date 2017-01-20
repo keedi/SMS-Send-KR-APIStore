@@ -12,7 +12,7 @@ use parent qw( SMS::Send::Driver );
 use HTTP::Tiny;
 use JSON;
 
-our $URL     = "http://api.apistore.co.kr/ppurio/1/message";
+our $URL     = "http://api.apistore.co.kr/ppurio/1";
 our $AGENT   = 'SMS-Send-KR-APIStore/' . $SMS::Send::KR::APIStore::VERSION;
 our $TIMEOUT = 3;
 our $TYPE    = 'SMS';
@@ -40,7 +40,16 @@ our %ERROR_CODE = (
     '4424' => 'sms:URL SMS 미지원폰',
     '4403' => 'sms:메시지삭제됨',
     '4430' => 'sms:스팸',
+    '4431' => 'sms:발송제한 수신거부(스팸)',
+    '4432' =>
+        'sms:번호도용문자 차단서비스에 가입된 발신번호(개인)사용',
+    '4433' =>
+        'sms:번호도용문자 차단서비스에 가입된 발신번호(개인)사용',
+    '4434' => 'sms:발신번호 사전 등록제에 의한 미등록 차단',
+    '4435' => 'sms:KISA 에 스팸 신고된 발신번호 사용',
+    '4436' => 'sms:발신번호 사전 등록제 번호규칙 위반',
     '4420' => 'sms:기타에러',
+
     '6600' => 'mms:전달',
     '6601' => 'mms:타임아웃',
     '6602' => 'mms:핸드폰호처리중',
@@ -66,7 +75,19 @@ our %ERROR_CODE = (
     '6622' => 'mms:잘못된번호형식',
     '6623' => 'mms:잘못된데이터형식',
     '6624' => 'mms:MMS 정보를찾을수없음',
+    '6625' => 'mms:NPDB 에러',
+    '6626' => 'mms:080 수신거부(SPAM)',
+    '6627' => 'mms:발신제한 수신거부(SPAM)',
+    '6628' =>
+        'mms:번호도용문자 차단서비스에 가입된 발신번호(개인)사용',
+    '6629' =>
+        'mms:번호도용문자 차단서비스에 가입된 발신번호(개인)사용',
+    '6630' => 'mms:서비스 불가 번호',
+    '6631' => 'mms:발신번호 사전 등록제에 의한 미등록 차단',
+    '6632' => 'mms:KISA 에 스팸 신고된 발신번호 사용',
+    '6633' => 'mms:발신번호 사전 등록제 번호규칙 위반',
     '6670' => 'mms:이미지파일크기제한',
+
     '9903' => '선불사용자 사용금지',
     '9904' => 'Block time(날짜제한)',
     '9082' => '발송해제',
@@ -79,14 +100,15 @@ our %ERROR_CODE = (
     '9013' => '발송시간 지난 데이터',
     '9014' => '시간제한(리포트 수신대기 timeout)',
     '9020' => 'Wrong Data Format',
-    '9021' => '',
+    '9021' => 'Wrong Data Format',
     '9022' => 'Wrong Data Format(cinfo가 특수 문자/공백을 포함)',
     '9080' => 'Deny User Ack',
     '9214' => 'Wrong Phone Num',
     '9311' => 'Fax File Not Found',
     '9908' => 'PHONE, FAX 선불사용자 제한기능',
     '9090' => '기타에러',
-    '-1'   => '잘못된 데이터 형식 발송오류',
+
+    '-1' => '잘못된 데이터 형식 발송오류',
 );
 
 sub new {
@@ -148,7 +170,7 @@ sub send_sms {
         timeout         => $self->{_timeout},
         default_headers => { 'x-waple-authorization' => $self->{_api_store_key} },
     ) or $ret{reason} = 'cannot generate HTTP::Tiny object', return \%ret;
-    my $url = sprintf '%s/%s/%s', $self->{_url}, lc($type), $self->{_id};
+    my $url = sprintf '%s/message/%s/%s', $self->{_url}, lc($type), $self->{_id};
 
     #
     # delay / send_time: reserve SMS
@@ -191,6 +213,9 @@ sub send_sms {
         $ret{reason} = 'ok' if $ret{detail}{result_code} eq '200';
         $ret{reason} = 'parameter error' if $ret{detail}{result_code} eq '300';
         $ret{reason} = 'etc error' if $ret{detail}{result_code} eq '400';
+        $ret{reason} = 'prevent unregistered caller identification'
+            if $ret{detail}{result_code} eq '500';
+        $ret{reason} = 'not enough pre-payment charge' if $ret{detail}{result_code} eq '600';
     }
     else {
         $ret{detail} = $res;
@@ -233,7 +258,7 @@ sub report {
         timeout         => $self->{_timeout},
         default_headers => { 'x-waple-authorization' => $self->{_api_store_key} },
     ) or $ret{reason} = 'cannot generate HTTP::Tiny object', return \%ret;
-    my $url = sprintf '%s/%s/%s', $self->{_url}, 'report', $self->{_id};
+    my $url = sprintf '%s/message/%s/%s', $self->{_url}, 'report', $self->{_id};
 
     my %form = ( cmid => $cmid );
     $form{$_} or delete $form{$_} for keys %form;
@@ -257,6 +282,101 @@ sub report {
     }
 
     return \%ret;
+}
+
+sub cid {
+    my ( $self, $cid, $cid_desc ) = @_;
+
+    if ($cid) {
+        my %ret = (
+            success => 0,
+            reason  => q{},
+        );
+
+        my $http = HTTP::Tiny->new(
+            agent           => $self->{_agent},
+            timeout         => $self->{_timeout},
+            default_headers => { 'x-waple-authorization' => $self->{_api_store_key} },
+        ) or $ret{reason} = 'cannot generate HTTP::Tiny object', return \%ret;
+
+        my $url = sprintf '%s/sendnumber/%s/%s', $self->{_url}, 'save', $self->{_id};
+
+        my %form = (
+            sendnumber => $cid,
+            comment    => $cid_desc,
+        );
+        $form{$_} or delete $form{$_} for keys %form;
+
+        my $res = $http->post_form( $url, \%form );
+        $ret{reason} = 'cannot get valid response for POST request';
+
+        if ( $res && $res->{success} ) {
+            $ret{detail} = decode_json( $res->{content} );
+
+            if ( $ret{detail}{result_code} eq '200' ) {
+                $ret{success} = 1;
+                $ret{reason}  = 'ok';
+            }
+            else {
+                $ret{reason} = 'unknown error';
+                $ret{reason} = 'user error' if $ret{detail}{result_code} eq '100';
+                $ret{reason} = 'parameter error' if $ret{detail}{result_code} eq '300';
+                $ret{reason} = 'etc error' if $ret{detail}{result_code} eq '400';
+                $ret{reason} = 'prevent unregistered caller identification'
+                    if $ret{detail}{result_code} eq '500';
+                $ret{reason} = 'not enough pre-payment charge' if $ret{detail}{result_code} eq '600';
+            }
+        }
+        else {
+            $ret{detail} = $res;
+            $ret{reason} = 'unknown error';
+        }
+
+        return \%ret;
+    }
+    else {
+        my %ret = (
+            success     => 0,
+            reason      => q{},
+            number_list => q{},
+        );
+
+        my $http = HTTP::Tiny->new(
+            agent           => $self->{_agent},
+            timeout         => $self->{_timeout},
+            default_headers => { 'x-waple-authorization' => $self->{_api_store_key} },
+        ) or $ret{reason} = 'cannot generate HTTP::Tiny object', return \%ret;
+
+        my $url = sprintf '%s/sendnumber/%s/%s', $self->{_url}, 'list', $self->{_id};
+
+        my $res = $http->get($url);
+        $ret{reason} = 'cannot get valid response for GET request';
+
+        if ( $res && $res->{success} ) {
+            $ret{detail} = decode_json( $res->{content} );
+
+            if ( $ret{detail}{result_code} eq '200' ) {
+                $ret{success}     = 1;
+                $ret{reason}      = 'ok';
+                $ret{number_list} = $ret{detail}{numberList} unless $cid;
+            }
+            else {
+                $ret{reason} = 'unknown error';
+                $ret{reason} = 'user error' if $ret{detail}{result_code} eq '100';
+                $ret{reason} = 'parameter error' if $ret{detail}{result_code} eq '300';
+                $ret{reason} = 'etc error' if $ret{detail}{result_code} eq '400';
+                $ret{reason} = 'prevent unregistered caller identification'
+                    if $ret{detail}{result_code} eq '500';
+                $ret{reason} = 'not enough pre-payment charge' if $ret{detail}{result_code} eq '600';
+            }
+        }
+        else {
+            $ret{detail} = $res;
+            $ret{reason} = 'unknown error';
+        }
+
+        return \%ret;
+    }
 }
 
 1;
@@ -300,7 +420,9 @@ __END__
 
     # You can override _from or _type
 
+    #
     # send a message
+    #
     my $sent = $sender->send_sms(
         text     => 'You LMS message may use up to 2000 chars and must be utf8',
         to       => '01025116893',
@@ -309,7 +431,9 @@ __END__
         _subject => 'This is a subject', # subject is optional & up to 40 chars
     );
 
+    #
     # check the result
+    #
     my $result = $sender->report("20130314163439459");
     printf "success:     %s\n", $result->{success} ? 'success' : 'fail';
     printf "reason:      %s\n", $result->{reason};
@@ -326,6 +450,35 @@ __END__
     # or you can use the send_sms() result itself
     my $sent = $sender->send_sms( ... );
     my $result = $sender->report($sent);
+
+    #
+    # set caller id
+    #
+
+    # set caller id only
+    my $ret = $sender->cid( "0XXXXXXXXX" );
+
+    # set caller id and its description
+    my $ret = $sender->cid( "0XXXXXXXXX", "Office #201" );
+
+    #
+    # get caller id list
+    #
+    my $ret = $sender->cid;
+    if ( $ret->{success} ) {
+        my $cids = $ret->{number_list};
+        my $idx = 0;
+        for my $cid (@$cids) {
+            say "$idx:";
+            say "     client_id: " . $cid->{client_id};
+            say "       comment: " . ( $cid->{comment} || q{} );
+            say "    sendnumber: " . $cid->{sendnumber};
+            ++$idx;
+        }
+    }
+    else {
+        say "failed to get cid info: $ret->{reason}"
+    }
 
 
 =head1 DESCRIPTION
@@ -371,6 +524,11 @@ Available parameters are:
 =method report
 
 This method checks the result of the request.
+
+
+=method cid
+
+This method gets/sets the caller id information.
 
 
 =attr _url
